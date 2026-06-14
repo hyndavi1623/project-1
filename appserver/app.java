@@ -1,4 +1,4 @@
-package com.example.instagram;
+package com.example.employee;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,19 +10,17 @@ import java.util.Map;
 
 @SpringBootApplication
 @RestController
-public class InstagramApplication {
+public class EmployeeApplication {
 
     private final JdbcTemplate jdbcTemplate;
 
-    public InstagramApplication(JdbcTemplate jdbcTemplate) {
+    public EmployeeApplication(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
     public static void main(String[] args) {
-        SpringApplication.run(InstagramApplication.class, args);
+        SpringApplication.run(EmployeeApplication.class, args);
     }
-
-    // FRONTEND + BACKEND IN SAME FILE
 
     @GetMapping("/")
     public String home() {
@@ -31,167 +29,140 @@ public class InstagramApplication {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Instagram Clone</title>
+            <title>Employee Management</title>
 
             <style>
+                body{
+                    font-family:Arial;
+                    background:#f4f4f4;
+                    margin:20px;
+                }
 
-            body{
-                font-family:Arial;
-                background:#fafafa;
-                margin:0;
-            }
+                .container{
+                    max-width:800px;
+                    margin:auto;
+                }
 
-            .header{
-                background:white;
-                padding:15px;
-                border-bottom:1px solid #ddd;
-                text-align:center;
-                font-size:24px;
-                font-weight:bold;
-            }
+                .card{
+                    background:white;
+                    padding:15px;
+                    margin:10px 0;
+                    border-radius:8px;
+                    box-shadow:0 2px 5px rgba(0,0,0,.1);
+                }
 
-            .container{
-                width:600px;
-                margin:auto;
-            }
+                input{
+                    width:100%;
+                    padding:10px;
+                    margin:5px 0;
+                }
 
-            .card{
-                background:white;
-                margin:20px 0;
-                border:1px solid #ddd;
-                border-radius:10px;
-                overflow:hidden;
-            }
+                button{
+                    width:100%;
+                    padding:10px;
+                    background:#007bff;
+                    color:white;
+                    border:none;
+                    cursor:pointer;
+                }
 
-            .username{
-                padding:10px;
-                font-weight:bold;
-            }
-
-            img{
-                width:100%;
-            }
-
-            .caption{
-                padding:10px;
-            }
-
-            .form{
-                background:white;
-                padding:15px;
-                margin-top:20px;
-                border-radius:10px;
-            }
-
-            input{
-                width:100%;
-                padding:10px;
-                margin:5px 0;
-            }
-
-            button{
-                width:100%;
-                padding:10px;
-                background:#0095f6;
-                color:white;
-                border:none;
-                cursor:pointer;
-            }
-
+                h1{
+                    text-align:center;
+                }
             </style>
-
         </head>
 
         <body>
 
-            <div class="header">
-                Instagram Clone
-            </div>
-
             <div class="container">
 
-                <div class="form">
+                <h1>Employee Management System</h1>
 
-                    <input id="username"
-                        placeholder="Username">
+                <div class="card">
 
-                    <input id="image"
-                        placeholder="Image URL">
+                    <input id="name" placeholder="Employee Name">
 
-                    <input id="caption"
-                        placeholder="Caption">
+                    <input id="department" placeholder="Department">
 
-                    <button onclick="createPost()">
-                        Create Post
+                    <input id="salary" placeholder="Salary">
+
+                    <button onclick="addEmployee()">
+                        Add Employee
                     </button>
 
                 </div>
 
-                <div id="feed"></div>
+                <div id="employees"></div>
 
             </div>
 
             <script>
 
-                async function loadPosts(){
+                async function loadEmployees(){
 
                     let response =
-                        await fetch('/api/posts');
+                        await fetch('/api/employees');
 
-                    let posts =
+                    let employees =
                         await response.json();
 
                     let html='';
 
-                    posts.forEach(p=>{
+                    employees.forEach(emp => {
 
                         html += `
                         <div class="card">
 
-                            <div class="username">
-                                ${p.username}
-                            </div>
+                            <h3>${emp.name}</h3>
 
-                            <img src="${p.image_url}">
+                            <p>
+                                Department:
+                                ${emp.department}
+                            </p>
 
-                            <div class="caption">
-                                ${p.caption}
-                            </div>
+                            <p>
+                                Salary:
+                                $${emp.salary}
+                            </p>
 
                         </div>`;
                     });
 
-                    document.getElementById('feed')
+                    document.getElementById('employees')
                         .innerHTML = html;
                 }
 
-                async function createPost(){
+                async function addEmployee(){
 
-                    let data = {
+                    let employee = {
 
-                        username:
-                            document.getElementById('username').value,
+                        name:
+                            document.getElementById('name').value,
 
-                        imageUrl:
-                            document.getElementById('image').value,
+                        department:
+                            document.getElementById('department').value,
 
-                        caption:
-                            document.getElementById('caption').value
+                        salary:
+                            document.getElementById('salary').value
                     };
 
-                    await fetch('/api/posts',{
+                    await fetch('/api/employees',{
+
                         method:'POST',
+
                         headers:{
                             'Content-Type':
                             'application/json'
                         },
-                        body:JSON.stringify(data)
+
+                        body:
+                            JSON.stringify(employee)
                     });
 
-                    loadPosts();
+                    loadEmployees();
                 }
 
-                loadPosts();
+                loadEmployees();
 
             </script>
 
@@ -200,83 +171,35 @@ public class InstagramApplication {
         """;
     }
 
-    @GetMapping("/api/posts")
-    public List<Map<String,Object>> posts(){
+    @GetMapping("/api/employees")
+    public List<Map<String,Object>> getEmployees() {
 
-        return jdbcTemplate.queryForList("""
-
-            SELECT
-                p.id,
-                u.username,
-                p.image_url,
-                p.caption
-
-            FROM posts p
-            JOIN users u
-            ON p.user_id=u.id
-
-            ORDER BY p.id DESC
-
-        """);
+        return jdbcTemplate.queryForList(
+            "SELECT * FROM employees ORDER BY id DESC"
+        );
     }
 
-    @PostMapping("/api/posts")
-    public String createPost(
-            @RequestBody PostRequest request){
+    @PostMapping("/api/employees")
+    public String addEmployee(
+            @RequestBody EmployeeRequest request) {
 
-        Long userId;
-
-        List<Long> users =
-            jdbcTemplate.query(
-                "SELECT id FROM users WHERE username=?",
-                (rs,rowNum)->rs.getLong("id"),
-                request.username
-            );
-
-        if(users.isEmpty()){
-
-            jdbcTemplate.update("""
-
-                INSERT INTO users
-                (username,email,password)
-
-                VALUES(?,?,?)
-
+        jdbcTemplate.update(
+            """
+            INSERT INTO employees
+            (name, department, salary)
+            VALUES (?, ?, ?)
             """,
-            request.username,
-            request.username+"@gmail.com",
-            "12345");
+            request.name,
+            request.department,
+            request.salary
+        );
 
-            userId =
-                jdbcTemplate.queryForObject(
-                    "SELECT id FROM users WHERE username=?",
-                    Long.class,
-                    request.username
-                );
-        }
-        else{
-            userId = users.get(0);
-        }
-
-        jdbcTemplate.update("""
-
-            INSERT INTO posts
-            (user_id,image_url,caption)
-
-            VALUES(?,?,?)
-
-        """,
-        userId,
-        request.imageUrl,
-        request.caption);
-
-        return "Post Created";
+        return "Employee Added";
     }
 
-    static class PostRequest {
-
-        public String username;
-        public String imageUrl;
-        public String caption;
+    static class EmployeeRequest {
+        public String name;
+        public String department;
+        public Double salary;
     }
 }
