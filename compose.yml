@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+
+  mysql:
+    image: mysql:8.4
+    container_name: instagram-mysql
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: instagram_clone
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database.sql:/docker-entrypoint-initdb.d/database.sql
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: instagram-app
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/instagram_clone?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
